@@ -2,41 +2,41 @@ import axios from 'axios';
 import { StatusBar } from 'expo-status-bar';
 import UserAvatar from 'react-native-user-avatar';
 import { useEffect, useState, useCallback } from 'react';
-import { FlatList, Platform, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Platform, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 export default function App() {
   const [users, setUsers] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
 
-  const onRefresh = useCallback(() => { //thecallback should be the fetch function or useeffect?
-    setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1000);
-  }, []); //don't need settimeout here, the spinner should display until the new data is fetched
-  //on refresh, set state to 'refreshing' fetch 10 new users, then set state to refreshing = false
-
-  //what is the timeout doing, what is the dependency array doing?
-  //needs to refresh the page, should fetch new data automatically
-
-
-  //create funcs for fetching 
-  //vars for 1 or 10 users
-
-
-  useEffect(() => {
+  const fetchUsers = (size) => {
     axios
-      .get('https://random-data-api.com/api/v2/users?size=10')
+      .get(`https://random-data-api.com/api/v2/users?size=${size}`)
       .then((response) => {
         setUsers(response.data);
       })
       .catch((error) => {
         console.error('error fetching users: ', error);
       });
-  }, []); //should depend on refreshing state
+  };
 
-//Platform used here to specify layout for android and ios
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchUsers(10);
+    setRefreshing(false);
+  }, []);
+  //don't need settimeout here, the spinner should display until the new data is fetched
+  //on refresh, set state to 'refreshing' fetch 10 new users, then set state to refreshing = false
+  
+
+  useEffect(() => {
+    fetchUsers(10);
+  }, []); //should depend on refreshing state?
+
+
+
+//platform specific rendering
 let os = Platform.OS
   const listItem = ({ item }) => {
     if (os === 'ios') {
@@ -93,6 +93,9 @@ let os = Platform.OS
     </SafeAreaProvider>
   );
 }
+
+
+
 
 const styles = StyleSheet.create({
   container: {
