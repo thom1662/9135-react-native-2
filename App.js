@@ -2,8 +2,10 @@ import axios from 'axios';
 import { StatusBar } from 'expo-status-bar';
 import UserAvatar from 'react-native-user-avatar';
 import { useEffect, useState, useCallback } from 'react';
-import { FlatList, Platform, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Platform, RefreshControl, StyleSheet, Text, View, } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { FAB } from '@rneui/themed';
+import fab from './components/fab';
 
 export default function App() {
   const [users, setUsers] = useState([]);
@@ -20,6 +22,17 @@ export default function App() {
       });
   };
 
+  const addOne = () => {
+      axios
+        .get('https://random-data-api.com/api/v2/users?size=1')
+        .then((response) => {
+          const newUser = response.data;
+          setUsers((prevUsers) => [newUser, ...prevUsers]); // Add the new user to the top of the list
+        })
+        .catch((error) => {
+          console.error('error fetching user: ', error);
+        });
+  }
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -62,12 +75,12 @@ let os = Platform.OS
             size={85}
             src={item.avatar}
             name={`${item.first_name} ${item.last_name}`}
-            bgColor='#85c1e9'
+            bgColor='#ADD0EB'
             borderRadius={50}
           />
           <View style={{ alignSelf: 'center' }}>
-            <Text style={[styles.name, styles.nameAndroid]}>{item.first_name}</Text>
-            <Text style={[styles.name, styles.nameAndroid]}>{item.last_name}</Text>
+            <Text style={styles.name}>{item.first_name}</Text>
+            <Text style={styles.name}>{item.last_name}</Text>
           </View>
         </View>
       );
@@ -79,21 +92,26 @@ let os = Platform.OS
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView>
-
-          <FlatList
-            data={users}
-            renderItem={listItem}
-            keyExtractor={(item) => item.uid.toString()}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-          >
-
-          </FlatList>
+      <SafeAreaView style={styles.container}>
+        <FlatList
+          style={{ width: '100%' }}
+          data={users}
+          renderItem={listItem}
+          keyExtractor={(item) => item.uid.toString()}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        ></FlatList>
+        <FAB
+          onPress={addOne}
+          style={styles.fab}
+          size='large'
+          overlayColor='#454545'
+          color='#007991'
+          icon={{ name: 'add', color: '#fff' }}
+        />
       </SafeAreaView>
     </SafeAreaProvider>
   );
 }
-
 
 
 
@@ -107,9 +125,7 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 18,
     fontStyle: 'bold',
-  },
-  nameAndroid: {
-    textAlign: 'right',
+    textAlign: Platform.OS === 'android' ? 'right' : 'left',
   },
   list: {
     flexDirection: 'row',
@@ -119,12 +135,28 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
   },
-  // listAndroid: {
-  //   flexDirection: 'row',
-  //   justifyContent: 'space-between',
-  //   borderBottomWidth: 1,
-  //   borderBottomColor: '#ccc',
-  //   paddingVertical: 10,
-  //   paddingHorizontal: 20,
-  // },
+  fab: {
+    position: 'absolute',
+    bottom: 48,
+    // right: scrnWidth / 2,
+
+    // Shadow for iOS
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.6,
+    shadowRadius: 4,
+    // Elevation for Android
+    elevation: 5,
+  },
 });
+
+
+//TODO: FAB to fetch more users, add to list, not replace. users.unshift(response.data) or something
+
+//move components to separate files
+
+//may need to refactor the fetch and onrefresh:
+// Current Implementation: Works fine but does not allow the use of finally for consistent state management.
+// Refactored Implementation: Returns a promise, allowing the use of finally to ensure setRefreshing(false) is called after the fetch operation completes.
+// This change improves the robustness and readability of your code, ensuring that the spinner is correctly managed during the pull-to-refresh operation.
+
